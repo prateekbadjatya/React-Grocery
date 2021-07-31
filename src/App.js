@@ -4,7 +4,11 @@ import Alert from "./Alert";
 
 const App = () => {
   const [name, setName] = useState("");
-  const [list, setList] = useState([]);
+  const [list, setList] = useState(
+    (localStorage.getItem("list") &&
+      JSON.parse(localStorage.getItem("list"))) ||
+      []
+  );
   const [isEdisting, setIsEditing] = useState(false);
   const [editID, setEditID] = useState(null);
   const [alert, setAlert] = useState({ show: false, msg: "", type: "" });
@@ -15,6 +19,18 @@ const App = () => {
       showAlert(true, "Please Eneter Value", "danger");
     } else if (name && isEdisting) {
       // edit
+      setList(
+        list.map(item => {
+          if (item.id === editID) {
+            item.title = name;
+          }
+          return item;
+        })
+      );
+      setEditID(null);
+      setIsEditing(false);
+      setName("");
+      showAlert(true, "Value Change Sucessfully", "success");
     } else {
       // show Alert
       // create new item
@@ -29,10 +45,26 @@ const App = () => {
     setAlert({ show, msg, type });
   };
 
+  const removeItem = id => {
+    showAlert(true, "Item Removed", "danger");
+    setList(list.filter(item => item.id !== id));
+  };
+
+  const editItem = (id, title) => {
+    setEditID(id);
+    setIsEditing(true);
+    setName(title);
+  };
+
+  useEffect(() => {
+    localStorage.setItem("list", JSON.stringify(list));
+  }, [list]);
   return (
     <section className="section-center">
       <form className="grocery-form" onSubmit={handleSubmit}>
-        {alert.show && <Alert {...alert} turnOffAlert={showAlert} />}
+        {alert.show && (
+          <Alert list={list} {...alert} turnOffAlert={showAlert} />
+        )}
         <h3>Grocery Bud</h3>
         <div className="form-control">
           <input
@@ -48,7 +80,7 @@ const App = () => {
       </form>
       {list && list.length > 0 && (
         <div className="grocery-container">
-          <List items={list} />
+          <List editItem={editItem} removeItem={removeItem} items={list} />
           <button onClick={() => setList([])} className="clear-btn">
             {" "}
             Clear Item
